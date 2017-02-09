@@ -32,6 +32,8 @@ export GOPATH="${build}"
 export GOROOT="${build}/.heroku/go"
 PATH="${GOPATH}/bin:${GOROOT}/bin:${PATH}"
 
+
+ls -al "${build}"
 # Install our vendored copy of github.com/apg/patter
 GOPATH="${GOPATH}:${testpack}/lib" GOBIN="${build}/bin" go install github.com/apg/patter
 
