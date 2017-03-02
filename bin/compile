@@ -27,6 +27,7 @@ needConcurrency() {
 
 handleDefaultPkgSpec() {
     if [ "${pkgs}" = "default" ]; then
+        count "default.pkgSpec"
         warn "Installing package '.' (default)"
         warn ""
         case "${TOOL}" in
@@ -207,13 +208,17 @@ ensureGo() {
                         local sha=$(echo ${goVersion} | cut -d - -f 2)  #assumes devel-<short sha> or devel-<full sha>
                         local url="https://github.com/golang/go/archive/$sha.tar.gz"
                         start "Downloading development Go version ${goVersion}"
+                            let start=$(nowms)
                             ${CURL} ${url} | tar zxf -
+                            mtime "devel.curl.time" "${start}"
                             mv go-${sha}* go
                         finished
                         step "Compiling development Go version ${goVersion}"
                         pushd go/src &> /dev/null
                             echo "devel +${sha} $(date "+%a %b %H:%M:%S %G %z")"> ../VERSION
+                            let start=$(nowms)
                             GOROOT_BOOTSTRAP=$(pushd ${cache}/${bGoVersion}/go > /dev/null; pwd; popd > /dev/null) ./make.bash 2>&1
+                            mtime "devel.build.time" "${start}"
                         popd &> /dev/null
                         go/bin/go version
                         rm -rf "${goPath}"
@@ -232,6 +237,7 @@ ensureGo() {
 
 setGoVersionFromEnvironment() {
     if [ -z "${GOVERSION}" ]; then
+        count "goversion.default.fromEnvironment"
         warn ""
         warn "'GOVERSION' isn't set, defaulting to '${DefaultGoVersion}'"
         warn ""
@@ -292,12 +298,13 @@ loadEnvDir "${env_dir}"
 determineTool
 
 ver=$(expandVer $ver)
+count "goversion.${ver}"
 
 if [ -e "${build}/bin" -a ! -d "${build}/bin" ]; then
     err ""
     err "File bin exists and is not a directory."
     err ""
-    exit 1
+    countExit "binExists"
 fi
 
 reportVer "${ver}"
@@ -358,11 +365,15 @@ case "${TOOL}" in
             ensureInPath "godep_linux_amd64" "${cache}/godep/bin"
 
             step "Running: godep go install -v ${FLAGS[@]} ${pkgs}"
+            let start=$(nowms)
             godep go install -v "${FLAGS[@]}" ${pkgs} 2>&1
+            mtime "godep.go.install.time" "${start}"
         else
             massagePkgSpecForVendor
             step "Running: go install -v ${FLAGS[@]} ${pkgs}"
+            let start=$(nowms)
             go install -v "${FLAGS[@]}" ${pkgs} 2>&1
+            mtime "go.install.time" "${start}"
         fi
     ;;
     govendor)
@@ -380,12 +391,16 @@ case "${TOOL}" in
 
         if [ "$(<${vendorJSON} jq -r '.heroku.sync')" != "false" ]; then
             step "Fetching any unsaved dependencies (govendor sync)"
+            let start=$(nowms)
             govendor sync
+            mtime "govendor.sync.time" "${start}"
         fi
         massagePkgSpecForVendor
 
         step "Running: go install -v ${FLAGS[@]} ${pkgs}"
+        let start=$(nowms)
         go install -v "${FLAGS[@]}" ${pkgs} 2>&1
+        mtime "go.install.time" "${start}"
     ;;
     glide)
         ensureGlide "${GlideVersion}"
@@ -404,19 +419,25 @@ case "${TOOL}" in
         cd "${src}"
 
         step "Fetching any unsaved dependencies (glide install)"
+        let start=$(nowms)
         glide install 2>&1
+        mtime "glide.install.time" "${start}"
 
         massagePkgSpecForVendor
 
         step "Running: go install -v ${FLAGS[@]} ${pkgs}"
+        let start=$(nowms)
         go install -v "${FLAGS[@]}" ${pkgs} 2>&1
+        mtime "go.install.time" "${start}"
     ;;
     gb)
         ensureGB "${GBVersion}"
 
         cd $build
         step "Running: gb build ${FLAGS[@]}"
+        let start=$(nowms)
         gb build "${FLAGS[@]}" 2>&1
+        mtime "gb.build.time" "${start}"
 
         step "Post Compile Cleanup"
         for f in bin/*-heroku; do
@@ -431,6 +452,7 @@ if [ -n "${src}" -a "${src}" != "${build}" -a -e "${src}/Procfile" ]; then
 fi
 
 if [ ! -e $build/Procfile -a -n "${name}" ]; then
+    count "default.Procfile"
     echo -e "web: $(basename $name)" >> $build/Procfile
 fi
 
@@ -439,6 +461,7 @@ mkdir -p $build/.profile.d
 echo 'PATH=$PATH:$HOME/bin' > $build/.profile.d/go.sh
 
 if [ "${GO_INSTALL_TOOLS_IN_IMAGE}" = "true" ]; then
+    count "image.installTools"
     start "Copying go tool chain to \$GOROOT=\$HOME/.heroku/go"
         mkdir -p "${build}/.heroku/go"
         cp -a "${GOROOT}/"* "${build}/.heroku/go"
@@ -452,6 +475,7 @@ if [ "${GO_INSTALL_TOOLS_IN_IMAGE}" = "true" ]; then
 fi
 
 if [ "${GO_SETUP_GOPATH_IN_IMAGE}" = "true" ]; then
+    count "image.setupGOPATH"
     start "Cleaning up \$GOPATH/pkg"
         rm -rf $GOPATH/pkg
     finished
@@ -460,6 +484,7 @@ if [ "${GO_SETUP_GOPATH_IN_IMAGE}" = "true" ]; then
 fi
 
 if needConcurrency ${ver}; then
+    count "need.concurrency"
     cp $buildpack/vendor/concurrency.sh $build/.profile.d/
 fi
 

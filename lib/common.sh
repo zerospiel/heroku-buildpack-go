@@ -14,6 +14,9 @@ godepsJSON="${build}/Godeps/Godeps.json"
 vendorJSON="${build}/vendor/vendor.json"
 glideYAML="${build}/glide.yaml"
 
+BUILDPACK_LOG_FILE=${BUILDPACK_LOG_FILE:-/dev/null}
+BPLOG_PREFIX="buildpack.go"
+
 steptxt="----->"
 YELLOW='\033[1;33m'
 RED='\033[1;31m'
@@ -66,7 +69,9 @@ downloadFile() {
     mkdir -p "${targetDir}"
     pushd "${targetDir}" &> /dev/null
         start "Fetching ${localName}"
+            let start=$(nowms)
             ${CURL} -O "${BucketURL}/${fileName}"
+            mtime "download.${fileName}" "${start}"
             if [ "${fileName}" != "${localName}" ]; then
                 mv "${fileName}" "${localName}"
             fi
@@ -78,7 +83,7 @@ downloadFile() {
                 err "Downloaded file (${fileName}) sha does not match recorded SHA"
                 err "Unable to continue."
                 err ""
-                exit 1
+                countExit "invalidSHA"
             fi
         finished
     popd &> /dev/null
@@ -158,21 +163,24 @@ setGoVersionFromEnvironment() {
 
 determineTool() {
     if [ -f "${godepsJSON}" ]; then
+        count "tool.godep"
         TOOL="godep"
         step "Checking Godeps/Godeps.json file."
         if ! jq -r . < "${godepsJSON}" > /dev/null; then
             err "Bad Godeps/Godeps.json file"
-        exit 1
+            countExit "badGodeps"
         fi
         name=$(<${godepsJSON} jq -r .ImportPath)
         ver=${GOVERSION:-$(<${godepsJSON} jq -r .GoVersion)}
         warnGoVersionOverride
     elif [ -f "${vendorJSON}" ]; then
+        count "tool.govendor"
         TOOL="govendor"
         step "Checking vendor/vendor.json file."
         if ! jq -r . < "${vendorJSON}" > /dev/null; then
             err "Bad vendor/vendor.json file"
-            exit 1
+            bplog "$(<${vendorJSON})"
+            countExit "badVendorJSON"
         fi
         name=$(<${vendorJSON} jq -r .rootPath)
         if [ "$name" = "null" -o -z "$name" ]; then
@@ -182,7 +190,7 @@ determineTool() {
             err "and re-run 'govendor init'."
             err ""
             err "For more details see: https://devcenter.heroku.com/articles/go-apps-with-govendor#build-configuration"
-            exit 1
+            countExit "govendor.json.missingRootPath"
         fi
         ver=${GOVERSION:-$(<${vendorJSON} jq -r .heroku.goVersion)}
         warnGoVersionOverride
@@ -196,14 +204,54 @@ determineTool() {
             warn ""
         fi
     elif [ -f "${glideYAML}" ]; then
+        count "tool.glide"
         TOOL="glide"
         setGoVersionFromEnvironment
     elif [ -d "$build/src" -a -n "$(find "$build/src" -mindepth 2 -type f -name '*.go' | sed 1q)" ]; then
+        count "tool.gb"
         TOOL="gb"
         setGoVersionFromEnvironment
     else
         err "Godep, GB or govendor are required. For instructions:"
         err "https://devcenter.heroku.com/articles/go-support"
-        exit 1
+        countExit "unknownTool"
     fi
+}
+
+nowms() {
+    date +%s%3N
+}
+
+countExit() {
+    count "error.${1}"
+    exit 1
+}
+
+bplog() {
+  echo -n ${@} | awk 'BEGIN {printf "msg=\""; f="%s"} {gsub(/"/, "\\\"", $0); printf f, $0} {if (NR == 1) f="\\n%s" } END { print "\"" }' >> ${BUILDPACK_LOG_FILE}
+}
+
+mtime() {
+    local key="${BPLOG_PREFIX}.${1}"
+    local start="${2}"
+    local end="${3:-$(nowms)}"
+    echo "${key} ${start} ${end}" | awk '{ printf "measure#%s=%.3f\n", $1, ($3 - $2)/1000 }' >> ${BUILDPACK_LOG_FILE}
+}
+
+count() {
+    local k=”${BPLOG_PREFIX}.${1}”
+    local v=”${2:1}”
+    echo “count#${k}=${v}” >> ${BUILDPACK_LOG_FILE}
+}
+
+measure() {
+    local k=”${BPLOG_PREFIX}.${1}”
+    local v=”${2}”
+    echo “measure#${k}=${v}” >> ${BUILDPACK_LOG_FILE}
+}
+
+unique() {
+    local k="${BPLOG_PREFIX}.${1}"
+    local v=”${2}”
+    echo "unique#${k}=${v}" >> ${BUILDPACK_LOG_FILE}
 }
