@@ -235,23 +235,23 @@ mtime() {
     local key="${BPLOG_PREFIX}.${1}"
     local start="${2}"
     local end="${3:-$(nowms)}"
-    echo "${key} ${start} ${end}" | awk '{ printf "measure#%s=%.3f\n", $1, ($3 - $2)/1000 }' >> ${BUILDPACK_LOG_FILE}
+    echo "${key} ${start} ${end}" | awk '{ printf "measure#%s=%.3f\n", $1, ($3 - $2)/1000 }' >> "${BUILDPACK_LOG_FILE}"
 }
 
 count() {
     local k="${BPLOG_PREFIX}.${1}"
-    local v="${2:1}"
-    echo "count#${k}=${v}" >> ${BUILDPACK_LOG_FILE}
+    local v="${2:-1}"
+    echo "count#${k}=${v}" >> "${BUILDPACK_LOG_FILE}"
 }
 
 measure() {
     local k="${BPLOG_PREFIX}.${1}"
     local v="${2}"
-    echo "measure#${k}=${v}” >> ${BUILDPACK_LOG_FILE}
+    echo "measure#${k}=${v}" >> "${BUILDPACK_LOG_FILE}"
 }
 
 unique() {
     local k="${BPLOG_PREFIX}.${1}"
-    local v="${2}”
-    echo "unique#${k}=${v}" >> ${BUILDPACK_LOG_FILE}
+    local v="${2}"
+    echo "unique#${k}=${v}" >> "${BUILDPACK_LOG_FILE}"
 }
