@@ -240,7 +240,7 @@ mtime() {
 
 count() {
     local k="${BPLOG_PREFIX}.${1}"
-    local v="${2:-"1"}"
+    local v="${2:-1}"
     echo "count#${k}=${v}" >> "${BUILDPACK_LOG_FILE}"
 }
 
