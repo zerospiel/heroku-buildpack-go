@@ -239,19 +239,19 @@ mtime() {
 }
 
 count() {
-    local k=”${BPLOG_PREFIX}.${1}”
-    local v=”${2:1}”
-    echo “count#${k}=${v}” >> ${BUILDPACK_LOG_FILE}
+    local k="${BPLOG_PREFIX}.${1}"
+    local v="${2:1}"
+    echo "count#${k}=${v}" >> ${BUILDPACK_LOG_FILE}
 }
 
 measure() {
-    local k=”${BPLOG_PREFIX}.${1}”
-    local v=”${2}”
-    echo “measure#${k}=${v}” >> ${BUILDPACK_LOG_FILE}
+    local k="${BPLOG_PREFIX}.${1}"
+    local v="${2}"
+    echo "measure#${k}=${v}” >> ${BUILDPACK_LOG_FILE}
 }
 
 unique() {
     local k="${BPLOG_PREFIX}.${1}"
-    local v=”${2}”
+    local v="${2}”
     echo "unique#${k}=${v}" >> ${BUILDPACK_LOG_FILE}
 }

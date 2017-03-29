@@ -27,7 +27,7 @@ needConcurrency() {
 
 handleDefaultPkgSpec() {
     if [ "${pkgs}" = "default" ]; then
-        count default.pkgSpec
+        count "default.pkgSpec"
         warn "Installing package '.' (default)"
         warn ""
         case "${TOOL}" in
