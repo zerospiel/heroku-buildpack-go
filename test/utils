@@ -153,9 +153,13 @@ assertNotCaptured()
   assertFileNotContains "$@" "${STD_OUT}"
 }
 
+assertSuccess() {
+  assertEquals "Expected captured exit code to be 0; was <${RETURN}>" "0" "${RETURN}"
+}
+
 assertCapturedSuccess()
 {
-  assertEquals "Expected captured exit code to be 0; was <${RETURN}>" "0" "${RETURN}"
+  assertSuccess
   assertEquals "Expected STD_ERR to be empty; was <$(cat ${STD_ERR})>" "" "$(cat ${STD_ERR})"
 }
 
