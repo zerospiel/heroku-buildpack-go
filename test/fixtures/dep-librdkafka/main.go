@@ -7,5 +7,5 @@ import (
 )
 
 func main() {
-	fmt.Println(kafka.LibraryVersion)
+	fmt.Println(kafka.LibraryVersion())
 }
