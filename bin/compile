@@ -20,6 +20,7 @@ GBVersion="$(<${DataJSON} jq -r '.GB.DefaultVersion')"
 PkgErrorsVersion="$(<${DataJSON} jq -r '.PkgErrors.DefaultVersion')"
 MercurialVersion="$(<${DataJSON} jq -r '.HG.DefaultVersion')"
 MattesMigrateVersion="$(<${DataJSON} jq -r '.MattesMigrate.DefaultVersion')"
+librdkafkaVersion="$(<${DataJSON} jq -r '.librdkafka.DefaultVersion')"
 TQVersion="$(<${DataJSON} jq -r '.tq.DefaultVersion')"
 # BazaarVersion="2.7.0"
 
@@ -154,21 +155,38 @@ ensureGlide() {
     fi
 }
 
-ensureMattesMigrate() {
-    local mmVersion="DEFAULT"
+additionalToolVersion() {
+    local ver="DEFAULT"
+    local at="${1}"
     case "${TOOL}" in
         govendor)
-            mmVersion="$(<${vendorJSON} jq -r '.heroku.additionalTools | map(select(contains("github.com/mattes/migrate@"))) | if .[0] then .[0] else "@DEFAULT" end | split("@") | .[1]')"
+            ver="$(<${vendorJSON} jq -r '.heroku.additionalTools | map(select(contains("'${at}'@"))) | if .[0] then .[0] else "@DEFAULT" end | split("@") | .[1]')"
         ;;
         dep)
-            f=$(<${depTOML} tq '$.metadata.heroku["additional-tools"]' | grep ^github.com/mattes/migrate | sed s:github.com/mattes/migrate::)
+            f=$(<${depTOML} tq '$.metadata.heroku["additional-tools"]' | grep ^${at} | sed s:${at}::)
             f=${f:-"@DEFAULT"}
-            mmVersion="$(echo $f | cut -d @ -f 2)"
+            ver="$(echo $f | cut -d @ -f 2)"
         ;;
     esac
-    if [[ "${mmVersion}" = "DEFAULT" ]]; then
-        mmVersion="${MattesMigrateVersion}"
-    fi
+    case "${at}" in
+        github.com/mattes/migrate)
+            ver="${MattesMigrateVersion}"
+        ;;
+        librdkafka)
+            ver="${librdkafkaVersion}"
+        ;;
+        *)
+            err ""
+            err "Unknown additional tool: ${at}"
+            err ""
+            exit 1
+        ;;
+    esac
+    echo "${ver}"
+}
+
+ensureMattesMigrate() {
+    local mmVersion=$(additionalToolVersion "github.com/mattes/migrate")
     local tmp="$(mktemp -d)"
     local mmPath="${cache}/mattesMigrate/${mmVersion}"
     local targetFile="${build}/bin/migrate"
@@ -185,13 +203,54 @@ ensureMattesMigrate() {
     fi
 }
 
-wantMattesMigrate() {
+ensurelibrdkafka() {
+    local version=$(additionalToolVersion "librdkafka")
+    local nonv="librdkafka-$(echo ${version} | sed s:^v::)"
+    local tmp="$(mktemp -d)"
+    local rdcache="${cache}/librdkafka"
+    local target="${build}/.heroku/cache/librdkafka"
+
+    if [ -e ${target} ]; then
+        rm -rf ${target}
+    fi
+
+    # Clean up the cache if we have a different version
+    if [ -e ${rdcache} -a ! -e ${rdcache}/${version} ]; then
+        rm -rf ${rdcache}
+    fi
+
+    mkdir -p ${target}
+    rdcache="${rdcache}/${version}"
+
+    if [ ! -e ${rdcache} ]; then
+        mkdir -p ${rdcache}
+        step "Installing librdkafka ${version}"
+        ensureFile "librdkafka-${version}.tar.gz" "${tmp}" "tar -C ${rdcache} --strip-components=1 -zxf"
+    fi
+
+    cd ${rdcache}
+    if [ ! -e Makefile.config ]; then
+        ./configure --prefix=${target}
+    fi
+
+    make
+    make install
+    export C_INCLUDE_PATH=${target}/include:${C_INCLUDE_PATH}
+    export LIBRARY_PATH=${target}/lib:${LIBRARY_PATH}
+    export LD_LIBRARY_PATH=${target}/lib:${LD_LIBRARY_PATH}
+    export PKG_CONFIG_PATH=${target}/lib/pkgconfig:${PKG_CONFIG_PATH}
+    mkdir -p ${build}/.profile.d
+    echo "export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:\$HOME/.heroku/cache/librdkafka/lib" > ${build}/.profile.d/librdkafka.sh
+}
+
+wantAdditionalTool() {
+    local at="${1}"
     case "${TOOL}" in
         govendor)
-            <${vendorJSON} jq -e '.heroku.additionalTools | contains(["github.com/mattes/migrate"])' &> /dev/null
+            <${vendorJSON} jq -e '.heroku.additionalTools | contains(["'${at}'"])' &> /dev/null
         ;;
         dep)
-          <${depTOML} tq '$.metadata.heroku["additional-tools"]' | grep "^github.com/mattes/migrate$" &> /dev/null
+            <${depTOML} tq '$.metadata.heroku["additional-tools"]' | grep "^${at}$" &> /dev/null
         ;;
         *)
             false
@@ -200,8 +259,14 @@ wantMattesMigrate() {
 }
 
 installMattesMigrateIfWanted() {
-    if wantMattesMigrate; then
+    if wantAdditionalTool "github.com/mattes/migrate"; then
         ensureMattesMigrate
+    fi
+}
+
+installlibrdkafkaIfWanted() {
+    if wantAdditionalTool "librdkafka"; then
+        ensurelibrdkafka
     fi
 }
 
@@ -385,6 +450,8 @@ if [ -n "${GO_LINKER_SYMBOL}" -a -n "${GO_LINKER_VALUE}" ]; then
 fi
 
 export GOPATH
+
+installlibrdkafkaIfWanted
 
 # GB installation
 case "${TOOL}" in

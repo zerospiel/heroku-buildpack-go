@@ -266,6 +266,10 @@
         "URL": "https://github.com/mattes/migrate/releases/download/v3.0.0/migrate.linux-amd64.tar.gz",
         "SHA": "13fbabe2db0ee3f79611c8171b0596939a3f384025f62925ed136267681e4fbf"
     },
+    "librdkafka-v0.11.3.tar.gz": {
+        "URL": "https://github.com/edenhill/librdkafka/archive/v0.11.3.tar.gz",
+        "SHA": "2b96d7ed71470b0d0027bd9f0b6eb8fb68ed979f8092611c148771eb01abb72c"
+    },
     "tq-v0.4-linux-amd64": {
         "URL": "https://github.com/heroku/tq/releases/download/v0.4/tq-v0.4-linux-amd64",
         "SHA": "36d33a30e2cafe4b747b8de2449185a13239fb6da2887dde74f3d390fc639e3b",

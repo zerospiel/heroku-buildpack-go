@@ -27,6 +27,24 @@ testGovendorWithPrivateDeps() {
   assertCompiledBinaryOutputs "This is in a string from a Private Repo"
 }
 
+testDepWithlibrdkadka() {
+  fixture "dep-librdkafka"
+
+  assertDetected
+
+  compile
+  assertCaptured "Installing go"
+  assertCaptured "Fetching librdkafka"
+  assertFileExists ".heroku/cache/librdkafka/lib/librdkafka.so.1"
+  assertFileExists ".profile.d/librdkafka.sh"
+  assertCaptured "Fetching dep"
+  assertCaptured "Fetching any unsaved dependencies (dep ensure)"
+  assertCaptured "Running: go install -v -tags heroku ."
+  assertCaptured "github.com/heroku/fixture"
+  assertCapturedSuccess
+  assertCompiledBinaryExists  
+}
+
 testDepWithMattesMigrate() {
   fixture "dep-mattes-migrate"
 

@@ -15,6 +15,9 @@ shell: docker
 quick: BASH_COMMAND := test/quick; bash
 quick: docker
 
+tt: BASH_COMMAND := test/quick compile dep-librdkafka; bash
+tt: docker
+
 publish:
 	bin/publish heroku/go
 
