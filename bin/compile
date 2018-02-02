@@ -229,11 +229,7 @@ ensurelibrdkafka() {
     fi
 
     cd ${rdcache}
-    if [ ! -e Makefile.config ]; then
-        start "Running librdkafka's ./configure"
-            ./configure --prefix=${target}
-        finished
-    fi
+    ./configure --prefix=${target}
 
     start "Compiling librdkafka"
         make
@@ -241,7 +237,7 @@ ensurelibrdkafka() {
     start "Installing librdkafka"
         make install
     finished
-    
+
     export C_INCLUDE_PATH=${target}/include:${C_INCLUDE_PATH}
     export LIBRARY_PATH=${target}/lib:${LIBRARY_PATH}
     export LD_LIBRARY_PATH=${target}/lib:${LD_LIBRARY_PATH}
