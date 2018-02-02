@@ -41,6 +41,7 @@ testDepWithlibrdkadka() {
   assertCaptured "Fetching any unsaved dependencies (dep ensure)"
   assertCaptured "Running: go install -v -tags heroku ."
   assertCaptured "github.com/heroku/fixture"
+  echo '"'${IMAGE}'"'
   if [ "${IMAGE}" = "heroku/cedar:14" ]; then
     # on cedar:14 make seems to emit a non fatal error to stdout, 
     # so don't assert it's empty, just assertSuccess
