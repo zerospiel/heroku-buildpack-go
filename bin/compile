@@ -229,7 +229,11 @@ ensurelibrdkafka() {
     fi
 
     cd ${rdcache}
-    ./configure --prefix=${target}
+    #TODO: Figure out how to not have to run this for every build
+    # It's necessary to run each build because the build system
+    # sets the build target to a temporary location, which changes
+    # between builds and configure caches the location.
+    ./configure --prefix=${target} 
 
     start "Compiling librdkafka"
         make
