@@ -45,6 +45,25 @@ testDepWithMattesMigrate() {
   assertCompiledBinaryExists "migrate"
 }
 
+testDepWithGoMigrate() {
+  fixture "dep-go-migrate"
+
+  assertDetected
+
+  compile
+  assertCaptured "Installing go"
+  assertCaptured "Fetching dep"
+  assertCaptured "Fetching any unsaved dependencies (dep ensure)"
+  assertCaptured "Running: go install -v -tags heroku ."
+  assertCaptured "github.com/heroku/fixture"
+  assertCaptured "Installing github.com/golang-migrate/migrate"
+  assertCaptured "Fetching migrate"
+  assertCapturedSuccess
+  assertCompiledBinaryExists
+  assertCompiledBinaryExists "migrate"
+}
+
+
 testDepWithDepsPruned() {
   fixture "dep-with-dep-pruned"
 
@@ -168,6 +187,25 @@ testGovendorMattesMigrateCLI() {
   assertCaptured "Fetching any unsaved dependencies (govendor sync)"
   assertCaptured "Running: go install -v -tags heroku ."
   assertCaptured "Installing github.com/mattes/migrate"
+  assertCaptured "Fetching migrate"
+  assertCapturedSuccess
+  assertCompiledBinaryExists
+  assertCompiledBinaryOutputs "fixture" "hello"
+  assertCompiledBinaryExists "migrate"
+}
+
+testGovendorGoMigrateCLI() {
+  fixture "govendor-go-migrate"
+
+  assertDetected
+
+  compile
+  assertCaptured "Checking vendor/vendor.json file."
+  assertCaptured "Installing go"
+  assertCaptured "Fetching govendor"
+  assertCaptured "Fetching any unsaved dependencies (govendor sync)"
+  assertCaptured "Running: go install -v -tags heroku ."
+  assertCaptured "Installing github.com/golang-migrate/migrate"
   assertCaptured "Fetching migrate"
   assertCapturedSuccess
   assertCompiledBinaryExists
