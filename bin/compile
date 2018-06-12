@@ -295,6 +295,7 @@ ensureGo() {
 
     export GOROOT="${goPath}"
     PATH="${goPath}/bin:${PATH}"
+    echo "\$cache: ${cache}"
     go env
 }
 
