@@ -332,12 +332,14 @@ ensureGo() {
     export GOROOT="${goPath}"
     PATH="${goPath}/bin:${PATH}"
 
+    go env | grep GOCACHE
     # Export GOCACHE if Go >= 1.10
     if go env | grep -q '^GOCACHE='; then
         mkdir -p "${cache}/go-build-cache"
         ln -s "${cache}/go-build-cache" /tmp/go-buildpack-build-cache
         export GOCACHE="/tmp/go-buildpack-build-cache"
     fi
+    go env | grep GOCACHE
 }
 
 setGoVersionFromEnvironment() {
