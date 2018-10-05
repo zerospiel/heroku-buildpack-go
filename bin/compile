@@ -332,6 +332,8 @@ ensureGo() {
     export GOROOT="${goPath}"
     PATH="${goPath}/bin:${PATH}"
 
+
+    export GODEBUG=gocachetest=1
     go env | grep GOCACHE
     # Export GOCACHE if Go >= 1.10
     if go env | grep -q '^GOCACHE='; then
