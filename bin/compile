@@ -383,6 +383,7 @@ warnPackageSpecOverride() {
 setupGOPATH() {
     local name="${1}"
     local t="/tmp/heroku-buildpack-go-gopath"
+    mkdir -p "${t}"
 
     if [ "${GO_SETUP_GOPATH_IN_IMAGE}" = "true" ]; then
         mv -t ${t} ${build}/*
