@@ -382,7 +382,7 @@ warnPackageSpecOverride() {
 # the source code as $src. The output of this function is meant to be eval'd'
 setupGOPATH() {
     local name="${1}"
-    local t="$(mktemp -d)"
+    local t="/tmp/heroku-buildpack-go-gopath"
 
     if [ "${GO_SETUP_GOPATH_IN_IMAGE}" = "true" ]; then
         mv -t ${t} ${build}/*
