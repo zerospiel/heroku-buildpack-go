@@ -334,7 +334,9 @@ ensureGo() {
 
     # Export GOCACHE if Go >= 1.10
     if go env | grep -q '^GOCACHE='; then
-      export GOCACHE="${cache}/go-build-cache"
+        mkdir -p "${cache}/go-build-cache"
+        ln -s "${cache}/go-build-cache" /tmp/go-buildpack-build-cache
+        export GOCACHE="/tmp/go-buildpack-build-cache"
     fi
 }
 
