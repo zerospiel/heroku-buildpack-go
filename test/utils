@@ -1,5 +1,9 @@
 #!/bin/sh
 
+# return if utils already loaded
+[ -n "${UTILS_LOADED:-}" ] && exit 0
+UTILS_LOADED="yes"
+
 # taken from
 # https://github.com/ryanbrainard/heroku-buildpack-testrunner/blob/master/lib/test_utils.sh
 

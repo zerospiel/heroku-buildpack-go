@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # See README.md for info on running these tests.
 
+for t in $(pwd)/test/tests/*; do
+    source $t
+done
 
 testModNoVersion() {
   fixture "mod-no-version"
@@ -293,62 +296,6 @@ testGovendorMattesMigrateCLI() {
   assertCompiledBinaryExists
   assertCompiledBinaryOutputs "fixture" "hello"
   assertCompiledBinaryExists "migrate"
-}
-
-testTestPackGovendorWithTestsSkipBenchmark() {
-  fixture "govendor-with-tests"
-
-  env "GO_TEST_SKIP_BENCHMARK" "nope"
-
-  dotest
-  assertCapturedSuccess
-  assertCaptured "RUN   TestHello"
-  assertCaptured "PASS: TestHello"
-  assertCaptured "RUN   ExampleHello"
-  assertCaptured "PASS: ExampleHello"
-  assertNotCaptured "BenchmarkHello"
-}
-
-testTestPackGlideWithTestsSkipBenchmark() {
-  fixture "glide-with-tests"
-
-  env "GO_TEST_SKIP_BENCHMARK" "nope"
-
-  dotest
-  assertCapturedSuccess
-  assertCaptured "RUN   TestHello"
-  assertCaptured "PASS: TestHello"
-  assertCaptured "RUN   ExampleHello"
-  assertCaptured "PASS: ExampleHello"
-  assertNotCaptured "BenchmarkHello"
-}
-
-testTestPackGodepWithTestsSkipBenchmark() {
-  fixture "godep-with-tests"
-
-  env "GO_TEST_SKIP_BENCHMARK" "nope"
-
-  dotest
-  assertCapturedSuccess
-  assertCaptured "RUN   TestHello"
-  assertCaptured "PASS: TestHello"
-  assertCaptured "RUN   ExampleHello"
-  assertCaptured "PASS: ExampleHello"
-  assertNotCaptured "BenchmarkHello"
-}
-
-testTestPackGBWithTestsSkipBenchmark() {
-  fixture "gb-with-tests"
-
-  env "GO_TEST_SKIP_BENCHMARK" "nope"
-
-  dotest
-  assertCapturedSuccess
-  assertCaptured "RUN   TestHello"
-  assertCaptured "PASS: TestHello"
-  assertCaptured "RUN   ExampleHello"
-  assertCaptured "PASS: ExampleHello"
-  assertNotCaptured "BenchmarkHello"
 }
 
 testTestPackGovendorWithTests() {

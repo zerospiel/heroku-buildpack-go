@@ -611,7 +611,7 @@ if [ "${GO_INSTALL_TOOLS_IN_IMAGE}" = "true" ]; then
     fi
 fi
 
-if [ "${GO_SETUP_GOPATH_IN_IMAGE}" = "true" ]; then
+if [ "$TOOL" != "gomodules" -a "${GO_SETUP_GOPATH_IN_IMAGE}" = "true" ]; then
     start "Cleaning up \$GOPATH/pkg"
         rm -rf $GOPATH/pkg
     finished
