@@ -269,7 +269,7 @@ setGoVersionFromEnvironment() {
 }
 
 determineTool() {
-    if [ -f "${makefile}" -a -n "$(find "$build" -mindepth 3 -type f -name '*.go' | sed 1q)" ]; then
+    if [ -f "${makefile}" -a -n "$(grep '^heroku' ${makefile})" -a -n "$(find "$build" -mindepth 3 -type f -name '*.go' | sed 1q)" ]; then
         TOOL="make"
         setGoVersionFromEnvironment
     elif [ -f "${goMOD}" ]; then
