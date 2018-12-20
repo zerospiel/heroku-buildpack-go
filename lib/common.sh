@@ -370,7 +370,7 @@ determineTool() {
         TOOL="gb"
         setGoVersionFromEnvironment
     else
-        err "Go modules, dep, vendor folder, Godep, GB or govendor are required. For instructions:"
+        err "Makefile, Go modules, dep, Godep, GB or govendor are required. For instructions:"
         err "https://devcenter.heroku.com/articles/go-support"
         exit 1
     fi
