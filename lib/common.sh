@@ -272,9 +272,6 @@ determineTool() {
     if [ -f "${makefile}" -a -n "$(find "$build" -mindepth 3 -type f -name '*.go' | sed 1q)" ]; then
         TOOL="make"
         setGoVersionFromEnvironment
-    elif [ -d "$build/vendor" -a -n "$(find "$build/vendor" -mindepth 2 -type f -name '*.go' | sed 1q)" ]; then
-        TOOL="vendor"
-        setGoVersionFromEnvironment
     elif [ -f "${goMOD}" ]; then
         TOOL="gomodules"
         warn ""
