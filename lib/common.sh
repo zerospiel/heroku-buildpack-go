@@ -269,7 +269,13 @@ setGoVersionFromEnvironment() {
 }
 
 determineTool() {
-    if [ -f "${goMOD}" ]; then
+    if [ -f "${makefile}" -a -n "$(find "$build" -mindepth 3 -type f -name '*.go' | sed 1q)" ]; then
+        TOOL="make"
+        setGoVersionFromEnvironment
+    elif [ -d "$build/vendor" -a -n "$(find "$build/vendor" -mindepth 2 -type f -name '*.go' | sed 1q)" ]; then
+        TOOL="vendor"
+        setGoVersionFromEnvironment
+    elif [ -f "${goMOD}" ]; then
         TOOL="gomodules"
         warn ""
         warn "Go modules are an experimental feature of go1.11"
@@ -322,12 +328,6 @@ determineTool() {
             warn "For more details see: https://devcenter.heroku.com/articles/go-apps-with-dep#build-configuration"
             warn ""
         fi
-    elif [ -f "${makefile}" -a -n "$(find "$build" -mindepth 3 -type f -name '*.go' | sed 1q)" ]; then
-        TOOL="make"
-        setGoVersionFromEnvironment
-    elif [ -d "$build/vendor" -a -n "$(find "$build/vendor" -mindepth 2 -type f -name '*.go' | sed 1q)" ]; then
-        TOOL="vendor"
-        setGoVersionFromEnvironment
     elif [ -f "${godepsJSON}" ]; then
         TOOL="godep"
         step "Checking Godeps/Godeps.json file."
