@@ -1,6 +1,22 @@
 #!/usr/bin/env bash
 # See README.md for info on running these tests.
 
+testModWithHooks() {
+  fixture "mod-basic-with-hooks"
+
+  assertDetected
+
+  compile
+  assertCaptured "Installing go"
+  assertCaptured "-----> Running bin/go-pre-compile hook"
+  assertCaptured "PRE COMPILE"
+  assertCaptured "Running: go install -v -tags heroku ."
+  assertCaptured "github.com/heroku/fixture"
+  assertCaptured "-----> Running bin/go-post-compile hook"
+  assertCaptured "POST COMPILE"
+  assertCapturedSuccess
+  assertCompiledBinaryExists
+}
 
 testModNoVersion() {
   fixture "mod-no-version"
@@ -27,7 +43,7 @@ testModOldVersion() {
   assertDetected
 
   compile
-  assertCapturedError 1 "Please add the following comment to your go.mod file to specify"
+  assertCapturedError 1 "Please add a comment in your go.mod file, or update an existing one, to specify a Go version that does like so"
 }
 
 testDepWithGolangMigrate() {
@@ -121,7 +137,7 @@ testModDepsVendored() {
   assertCompiledBinaryExists
 }
 
-testGovendorWithPrivateDeps() {
+testGovendorWithPrivateDepsGithub() {
   if [ -z "${GITHUB_TOKEN}" ]; then
     echo "!!!"
     echo "!!! Skipping private Github repo test"
@@ -129,7 +145,7 @@ testGovendorWithPrivateDeps() {
     return 0
   fi
 
-  fixture "govendor-private"
+  fixture "govendor-private-github"
 
   env "GO_GIT_CRED__HTTPS__GITHUB__COM" "${GITHUB_TOKEN}"
 
@@ -142,6 +158,32 @@ testGovendorWithPrivateDeps() {
   assertCaptured "Installing package '.' (default)"
   assertCaptured "github.com/heroku/fixture"
   assertCaptured "github.com/go-test-user/go-private-repo-test"
+  assertCapturedSuccess
+  assertCompiledBinaryExists
+  assertCompiledBinaryOutputs "This is in a string from a Private Repo"
+}
+
+testGovendorWithPrivateDepsGitlab() {
+  if [ -z "${GITLAB_TOKEN}" ]; then
+    echo "!!!"
+    echo "!!! Skipping private Gitlab repo test"
+    echo "!!!"
+    return 0
+  fi
+
+  fixture "govendor-private-gitlab"
+
+  env "GO_GIT_CRED__HTTPS__GITLAB__COM" "${GITLAB_TOKEN}"
+
+  assertDetected
+
+  compile
+  assertCaptured "Checking vendor/vendor.json file."
+  assertCaptured "Installing go"
+  assertCaptured "Running: go install -v -tags heroku ."
+  assertCaptured "Installing package '.' (default)"
+  assertCaptured "github.com/heroku/fixture"
+  assertCaptured "gitlab.com/freeformz/private-go-test"
   assertCapturedSuccess
   assertCompiledBinaryExists
   assertCompiledBinaryOutputs "This is in a string from a Private Repo"

@@ -12,6 +12,16 @@ buildpack=$(cd "$(dirname $0)/.." && pwd)
 source "${buildpack}/lib/common.sh"
 ensureInPath "jq-linux64" "${cache}/.jq/bin"
 
+# This is used by the buildpack stdlib for metrics
+BPLOG_PREFIX="buildpack.go"
+
+STDLIB_FILE=$(mktemp -t stdlib.XXXXX)
+
+### Load dependencies
+
+curl --silent --retry 5 --retry-max-time 15 'https://lang-common.s3.amazonaws.com/buildpack-stdlib/v8/stdlib.sh' > "$STDLIB_FILE"
+source "$STDLIB_FILE"
+
 DefaultGoVersion="$(<${DataJSON} jq -r '.Go.DefaultVersion')"
 DepVersion="$(<${DataJSON} jq -r '.Dep.DefaultVersion')"
 GlideVersion="$(<${DataJSON} jq -r '.Glide.DefaultVersion')"
@@ -22,7 +32,6 @@ MercurialVersion="$(<${DataJSON} jq -r '.HG.DefaultVersion')"
 MattesMigrateVersion="$(<${DataJSON} jq -r '.MattesMigrate.DefaultVersion')"
 GolangMigrateVersion="$(<${DataJSON} jq -r '.GolangMigrate.DefaultVersion')"
 TQVersion="$(<${DataJSON} jq -r '.tq.DefaultVersion')"
-# BazaarVersion="2.7.0"
 
 # For specified versions of Go we need to keep concurrency.sh
 needConcurrency() {
@@ -116,6 +125,8 @@ expandVer() {
 # Use after expandVer
 reportVer() {
     local ver="${1}"
+    mcount "version.go.$ver"
+
     if <"${DataJSON}" jq  -e '.Go.Supported | any(. == "'${ver}'")' &> /dev/null; then
         return
     fi
@@ -443,6 +454,8 @@ fi
 export GOPATH
 
 # GB installation
+mcount "pkgmanagement.$TOOL"
+
 case "${TOOL}" in
     gomodules)
         pkgs=${GO_INSTALL_PACKAGE_SPEC:-$(awk '{ if ($1 == "//" && $2 == "+heroku" && $3 == "install" ) { print substr($0, index($0,$4)); exit }}' ${goMOD})}
@@ -460,8 +473,18 @@ case "${TOOL}" in
         unset GIT_DIR # unset git dir or it will mess with goinstall
         cd ${build}
         export GOBIN="${build}/bin"
+        if [[ -f bin/go-pre-compile ]]; then
+            step "Running bin/go-pre-compile hook"
+            chmod a+x bin/go-pre-compile
+            bin/go-pre-compile
+        fi
         step "Running: go install -v ${FLAGS[@]} ${pkgs}"
         go install -v "${FLAGS[@]}" ${pkgs} 2>&1
+        if [[ -f bin/go-post-compile ]]; then
+            step "Running bin/go-post-compile hook"
+            chmod a+x bin/go-post-compile
+            bin/go-post-compile
+        fi
     ;;
     dep)
         eval "$(setupGOPATH ${name})"

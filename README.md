@@ -80,6 +80,25 @@ greater than zero, `go install` is invoked with `-mod=vendor`, causing the build
 to skip downloading and checking of dependencies. This results in only the
 dependencies from the top level `vendor` directory being used.
 
+### Pre/Post Compile Hooks
+
+If the file `bin/go-pre-compile` or `bin/go-post-compile` exists and is
+executable then it will be executed either before compilation (go-pre-compile)
+of the repo, or after compilation (go-post-compile).
+
+Because the buildpack installs compiled executables to `bin`, the
+`go-post-compile` hook can be written in go if it's installed by the specified
+`<packagespec>` (see above).
+
+Example:
+
+```console
+$ cat go.mod
+// +heroku install ./cmd/...
+$ ls -F cmd
+client/ go-post-compile/ server/
+```
+
 ## dep specifics
 
 The `Gopkg.toml` file allows for arbitrary, tool specific fields. This buildpack
@@ -239,6 +258,29 @@ following contents, adjusted as needed for your project's root path.
 }
 ```
 
+## Default Procfile
+
+If there is no Procfile in the base directory of the code being built and the
+buildpack can figure out the name of the base package (also known as the
+module), then a default Procfile is created that includes a `web` process type
+that runs the resulting executable from compiling the base package.
+
+For example, if the package name was `github.com/heroku/example`, this buildpack
+would create a Procfile that looks like this:
+
+```sh
+$ cat Procfile
+web: example
+```
+
+This is useful when the base package is also the only main package to build.
+
+If you have adopted the `cmd/<executable name>` structure this won't work and
+you will need to create a [Procfile].
+
+Note: This buildpack should be able to figure out the name of the base package
+in all cases, except when gb is being used.
+
 ## Private Git Repos
 
 The buildpack installs a custom git credential handler. Any tool that shells out to git (most do) should be able to transparently use this feature. Note: It has only been tested with Github repos over https using personal access tokens.
@@ -352,3 +394,4 @@ make publish # && follow the prompts
 [glide]: https://github.com/Masterminds/glide
 [gomodules]: https://github.com/golang/go/wiki/Modules
 [DefaultVersion]: https://github.com/heroku/heroku-buildpack-go/blob/master/data.json#L4
+[Procfile]: https://devcenter.heroku.com/articles/procfile
