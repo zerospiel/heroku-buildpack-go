@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## v103 (2019-03-07)
+* Removed warnings on command line
+* Added info about compiled binaries
+
 ## v102 (2019-03-01)
 * Add go1.12 and default to it when go1.12 is specified.
 * Add go1.12 to the list of supported versions.
