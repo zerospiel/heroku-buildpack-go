@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## v105 (2019-03-18)
+* Add go1.12.1 & go1.11.6
+* Default to go1.12.1
+* If ./cmd exists and no package spec is set, then set package spec to ./cmd/...
+
+## v104 (2019-03-11)
+* Fix up Go modules testing to include mod=vendor or mod=readonly and set GOPATH to a temporary directory so downloaded deps' tests aren't executed.
+* Move publish script to /sbin/publish / don't push to master since it's disabled.
+* Add Codeowners to automate PR reviews.
+
 ## v103 (2019-03-07)
 * Removed warnings on command line
 * Added info about compiled binaries
