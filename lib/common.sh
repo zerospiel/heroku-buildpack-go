@@ -34,6 +34,49 @@ TOOL=""
 # Default to $SOURCE_VERSION environment variable: https://devcenter.heroku.com/articles/buildpack-api#bin-compile
 GO_LINKER_VALUE=${SOURCE_VERSION}
 
+snapshotBinBefore() {
+  if [ ! -d "${build}/bin" ]; then
+    return 0
+  fi
+  _oifs=$IFS
+  IFS=$'\n'
+  _binBefore=()
+  for f in ${build}/bin/*; do
+    if [ -f $f ]; then
+      _binBefore+=($(shasum $f))
+    fi
+  done
+  IFS=$_oifs
+}
+
+binDiff() {
+  _oifs=$IFS
+  IFS=$'\n'
+  local binAfter=()
+  for f in ${build}/bin/*; do
+    if [ -f $f ]; then
+      binAfter+=($(shasum $f))
+    fi
+  done
+
+  local new=()
+  for a in "${binAfter[@]}"; do
+    local let found=0
+
+    for b in "${_binBefore[@]}"; do
+        if [ "${a}" == "${b}" ]; then
+        let found+=1
+        fi
+    done
+
+    if [ $found -eq 0 ]; then
+        new+=( "./bin/$(basename $(echo $a | awk '{print $2}' ) )" )
+    fi
+  done
+  IFS=$_oifs
+  echo ${new[@]}
+}
+
 info() {
     echo -e "${GREEN}       $@${NC}"
 }
@@ -282,11 +325,13 @@ determineTool() {
         setGoVersionFromEnvironment
     elif [ -f "${goMOD}" ]; then
         TOOL="gomodules"
-        info ""
-        step "Detected go modules - go.mod"
-        info ""
+        step ""
+        info "Detected go modules via go.mod"
+        step ""
         ver=${GOVERSION:-$(awk '{ if ($1 == "//" && $2 == "+heroku" && $3 == "goVersion" ) { print $4; exit } }' ${goMOD})}
-        name=$(awk '{ if ($1 == "module" ) { print $2; exit } }' ${goMOD} | cut -d/ -f3)
+        name=$(awk '{ if ($1 == "module" ) { print $2; exit } }' < ${goMOD})
+        info "Detected Module Name: ${name}"
+        step ""
         warnGoVersionOverride
         if [ -z "${ver}" ]; then
             ver=${DefaultGoVersion}

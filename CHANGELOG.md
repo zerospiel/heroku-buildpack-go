@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## v107 (2019-04-02)
+* Handle non files in bin/ (symlinks, directories, etc) when diffing to determine contents of bin/
+
+## v106 (2019-04-01)
+* Fixed flag handling, which has been broken since -mod=vendor was added (at least)
+* For Go modules, detect main packages in the repo and install them when there isn't a specified package spec.
+* Only list the contents of bin/ that were installed/modified by the buildpack, instead of everything in bin/
+* Small updates to the readme
+
 ## v105 (2019-03-18)
 * Add go1.12.1 & go1.11.6
 * Default to go1.12.1

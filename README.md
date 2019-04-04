@@ -55,6 +55,11 @@ article][app-engine-build-constraints] for more info.
 
 ## Go Module Specifics
 
+When using go modules, this buildpack will search the code base for `main`
+packages, ignoring any in `vendor/`, and will automatically compile those
+packages. If this isn't what you want you can specify specific package spec(s)
+via the `go.mod` file's `// +heroku install` directive (see below).
+
 The `go.mod` file allows for arbitrary comments. This buildpack utilizes [build
 constraint](https://golang.org/pkg/go/build/#hdr-Build_Constraints) style
 comments to track Heroku build specific configuration which is encoded in the
@@ -67,11 +72,14 @@ following way:
 
   Example: `// +heroku goVersion go1.11`
 
-- `// +heroku install <packagespec>[, <packagespec>]`: a space seperated list of
-  the packages you want to install. If not specified, this defaults to `.`.
-  Other common choices are: `./cmd/...` (all packages and sub packages in the
-  `cmd` directory) and `./...` (all packages and sub packages of the current
-  directory). The exact choice depends on the layout of your repository though.
+- `// +heroku install <packagespec>[ <packagespec>]`: a space seperated list of
+  the packages you want to install. If not specified, the buildpack defaults to
+  detecting the `main` packages in the code base. Generally speaking this should
+  be sufficient for most users. If this isn't what you want you can instruct the
+  buildpack to only build certain packages via this option. Other common choices
+  are: `./cmd/...` (all packages and sub packages in the `cmd` directory) and
+  `./...` (all packages and sub packages of the current directory). The exact
+  choice depends on the layout of your repository though.
 
   Example: `// +heroku install ./cmd/... ./special`
 
@@ -303,21 +311,22 @@ that tests have been added to the `test/run` script and any corresponding fixtur
 
 ### Tests
 
-Requires docker.
+[Make] & [docker] are required to run tests.
 
 ```console
 make test
 ```
 
-### Compiling a fixture
+### Compiling a fixture locally
 
-Requires docker.
+[Make] & [docker] are required to compile a fixture.
 
 ```console
 make FIXTURE=<fixture name> compile
 ```
 
-You will then be dropped into a bash prompt in the container in which the fixture was compiled in.
+You will then be dropped into a bash prompt in the container that the fixture
+was compiled in.
 
 ## Using with cgo
 
@@ -358,9 +367,11 @@ into the compiled executable.
 
 ## Testpack
 
-This buildpack also supports the testpack API.
+This buildpack supports the testpack API.
 
 ## Deploying
+
+[Make] & the [Heroku Toolbelt][toolbelt] are required to deploy.
 
 ```console
 make publish # && follow the prompts
@@ -395,3 +406,6 @@ make publish # && follow the prompts
 [gomodules]: https://github.com/golang/go/wiki/Modules
 [DefaultVersion]: https://github.com/heroku/heroku-buildpack-go/blob/master/data.json#L4
 [Procfile]: https://devcenter.heroku.com/articles/procfile
+[make]: https://www.gnu.org/software/make/
+[docker]: https://www.docker.com/
+[toolbelt]: https://devcenter.heroku.com/articles/heroku-cli
