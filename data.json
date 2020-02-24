@@ -1,15 +1,15 @@
 {
   "Go": {
-    "Supported": [
-      "go1.12.1",
-      "go1.11.6"
-    ],
-    "DefaultVersion": "go1.12.1",
+    "DefaultVersion": "go1.12.16",
     "VersionExpansion": {
+      "go1.14.0": "go1.14rc1",
+      "go1.14": "go1.14rc1",
+      "go1.13.0": "go1.13",
+      "go1.13": "go1.13.7",
       "go1.12.0": "go1.12",
-      "go1.12": "go1.12.1",
+      "go1.12": "go1.12.16",
       "go1.11.0": "go1.11",
-      "go1.11": "go1.11.6",
+      "go1.11": "go1.11.13",
       "go1.10.0": "go1.10",
       "go1.10": "go1.10.8",
       "go1.9.0": "go1.9",
@@ -69,30 +69,13 @@
       "go1.6.2",
       "go1.6.3",
       "go1.6.4"
-    ],
-    "SupportsModuleExperiment": [
-      "go1.11beta2",
-      "go1.11beta3",
-      "go1.11rc1",
-      "go1.11rc2",
-      "go1.11",
-      "go1.11.1",
-      "go1.11.2",
-      "go1.11.3",
-      "go1.11.4",
-      "go1.11.5",
-      "go1.12beta1",
-      "go1.12beta2",
-      "go1.12rc1",
-      "go1.12",
-      "go1.12.1"
     ]
   },
   "Dep": {
-    "DefaultVersion": "v0.4.1"
+    "DefaultVersion": "v0.5.2"
   },
   "Glide": {
-    "DefaultVersion": "v0.12.3"
+    "DefaultVersion": "v0.13.3"
   },
   "Govendor": {
     "DefaultVersion": "1.0.8"
@@ -106,6 +89,9 @@
   "HG": {
     "DefaultVersion": "3.9"
   },
+  "BZR": {
+    "DefaultVersion": "2.7.0"
+  },
   "MattesMigrate": {
     "DefaultVersion": "v3.0.0"
   },
@@ -117,25 +103,26 @@
   },
   "test": {
     "assets": [
-      "stdlib.sh.v8",
-      "jq-linux64",
-      "go1.11.6.linux-amd64.tar.gz",
-      "go1.12.1.linux-amd64.tar.gz",
-      "go1.10.8.linux-amd64.tar.gz",
-      "go1.8.3.linux-amd64.tar.gz",
-      "go1.7.6.linux-amd64.tar.gz",
-      "go1.6.4.linux-amd64.tar.gz",
-      "go1.4.3.linux-amd64.tar.gz",
-      "govendor_linux_amd64",
-      "glide-v0.12.3-linux-amd64.tar.gz",
-      "mercurial-3.9.tar.gz",
-      "gb-0.4.4.tar.gz",
+      "dep-v0.5.2-linux-amd64",
       "errors-0.8.0.tar.gz",
+      "gb-0.4.4.tar.gz",
+      "glide-v0.13.3-linux-amd64.tar.gz",
+      "go1.10.8.linux-amd64.tar.gz",
+      "go1.11.13.linux-amd64.tar.gz",
+      "go1.12.16.linux-amd64.tar.gz",
+      "go1.4.3.linux-amd64.tar.gz",
+      "go1.6.4.linux-amd64.tar.gz",
+      "go1.7.6.linux-amd64.tar.gz",
+      "go1.8.3.linux-amd64.tar.gz",
       "godep_linux_amd64",
-      "migrate-v3.4.0-linux-amd64.tar.gz",
+      "golangci-lint-1.20.0-linux-amd64.tar.gz",
+      "govendor_linux_amd64",
+      "jq-linux64",
+      "mercurial-3.9.tar.gz",
       "migrate-v3.0.0-linux-amd64.tar.gz",
-      "tq-v0.5-linux-amd64",
-      "dep-v0.4.1-linux-amd64"
+      "migrate-v3.4.0-linux-amd64.tar.gz",
+      "stdlib.sh.v8",
+      "tq-v0.5-linux-amd64"
     ]
   }
 }

@@ -7,22 +7,13 @@ mkdir -p "$1" "$2"
 build=$(cd "$1/" && pwd)
 cache=$(cd "$2/" && pwd)
 env_dir="${3}"
-
 buildpack=$(cd "$(dirname $0)/.." && pwd)
+
 source "${buildpack}/lib/common.sh"
+source "${buildpack}/lib/common_tools.sh"
+source_stdlib
+
 snapshotBinBefore
-
-ensureInPath "jq-linux64" "${cache}/.jq/bin"
-
-# This is used by the buildpack stdlib for metrics
-BPLOG_PREFIX="buildpack.go"
-
-STDLIB_DIR=$(mktemp -d -t stdlib.XXXXX)
-
-### Load dependencies
-
-ensureFile "stdlib.sh.v8" "${STDLIB_DIR}" "chmod a+x"
-source "${STDLIB_DIR}/stdlib.sh.v8"
 
 DefaultGoVersion="$(<${DataJSON} jq -r '.Go.DefaultVersion')"
 DepVersion="$(<${DataJSON} jq -r '.Dep.DefaultVersion')"
@@ -31,6 +22,7 @@ GovendorVersion="$(<${DataJSON} jq -r '.Govendor.DefaultVersion')"
 GBVersion="$(<${DataJSON} jq -r '.GB.DefaultVersion')"
 PkgErrorsVersion="$(<${DataJSON} jq -r '.PkgErrors.DefaultVersion')"
 MercurialVersion="$(<${DataJSON} jq -r '.HG.DefaultVersion')"
+BazaarVersion="$(<${DataJSON} jq -r '.BZR.DefaultVersion')"
 MattesMigrateVersion="$(<${DataJSON} jq -r '.MattesMigrate.DefaultVersion')"
 GolangMigrateVersion="$(<${DataJSON} jq -r '.GolangMigrate.DefaultVersion')"
 TQVersion="$(<${DataJSON} jq -r '.tq.DefaultVersion')"
@@ -138,25 +130,6 @@ reportVer() {
             warn ""
         ;;
     esac
-}
-
-ensureHG() {
-    local hgVersion="${1}"
-    local tmp="$(mktemp -d)"
-    local hgPath="${cache}/hg/${hgVersion}"
-    if [ -x "${hgPath}/bin/hg" ]; then
-        step "Using hg v${hgVersion}"
-    else
-        rm -rf "${cache}/hg"
-        mkdir -p "${hgPath}"
-        step "Installing hg ${hgVersion}"
-        ensureFile "mercurial-${hgVersion}.tar.gz" "${tmp}" "tar -C ${tmp} --strip-components=1 -zxf"
-        pushd "${tmp}" &> /dev/null
-            python setup.py install --force --home="${hgPath}" &> /dev/null
-        popd &> /dev/null
-    fi
-
-    addToPATH "${hgPath}/bin"
 }
 
 ensureGlide() {
@@ -289,7 +262,12 @@ ensureGo() {
     if [ -d "${goPath}" ]; then
         step "Using ${goVersion}"
     else
-        rm -rf ${cache}/* #For a go version change, we delete everything
+        #For a go version change, we delete everything
+        step "New Go Version, clearing old cache"
+        if [ -d "${cache}/go-path" ]; then
+            find "${cache}/go-path" ! -perm -u=w -print0 | xargs -r -0 chmod u+w 2>&1
+        fi
+        rm -rf ${cache}/*
         case "${goVersion}" in
             devel*)
                 local bGoVersion="$(expandVer ${DefaultGoVersion})"
@@ -456,6 +434,40 @@ mainPackagesInModule() {
   go list -find -mod=vendor -f '{{ if eq .Name "main" }} {{.ImportPath}} {{ end }}' ./...
 }
 
+setupProcfile() {
+    if [ -f "${build}/Procfile" ]; then
+        return
+    fi
+    local pkgs=$(mainPackagesInModule)
+    if [ -z "${pkgs}" ]; then
+        return
+    fi
+    local pf=()
+    for pkg in ${pkgs}; do
+        local bn=$(basename ${pkg})
+        pf+=("${bn}: bin/${bn}")
+    done
+    if [ ${#pf} -eq 0 ]; then
+        return
+    fi
+    info ""
+    info "Created a Procfile with the following entries:"
+    if [ ${#pf[@]} -eq 1 ]; then
+        local line="web: bin/$(echo ${pf[0]} | cut -d / -f 2)"
+        echo "${line}" > ${build}/Procfile
+        info "\t\t${line}"
+    elif [ ${#pf[@]} -gt 1 ]; then
+        for pfl in "${pf[@]}"; do
+            echo "${pfl}" >> ${build}/Procfile
+            info "\t\t${pfl}"
+        done
+    fi
+    info ""
+    info "If these entries look incomplete or incorrect please create a Procfile with the required entries."
+    info "See https://devcenter.heroku.com/articles/procfile for more details about Procfiles"
+    info ""
+}
+
 case "${TOOL}" in
     gomodules)
         cd ${build}
@@ -502,6 +514,12 @@ case "${TOOL}" in
 
         unset GIT_DIR # unset git dir or it will mess with goinstall
         export GOBIN="${build}/bin"
+        if [ "${GO_SETUP_GOPATH_FOR_MODULE_CACHE}" = "true" ]; then
+            export GOPATH="${build}/.heroku/go-path"
+            mkdir -p $GOPATH # ensure that it's created
+        else
+            export GOPATH="${cache}/go-path"
+        fi
         if [[ -f bin/go-pre-compile ]]; then
             step "Running bin/go-pre-compile hook"
             chmod a+x bin/go-pre-compile
@@ -602,7 +620,6 @@ case "${TOOL}" in
     ;;
     glide)
         ensureGlide "${GlideVersion}"
-        ensureHG "${MercurialVersion}"
 
         # Do this before setupGOPATH as we need ${name} set first
         cd "${build}"
@@ -656,8 +673,19 @@ esac
 installGolangMigrateIfWanted
 installMattesMigrateIfWanted
 
+_newOrUpdatedBinFiles=$(binDiff)
+info ""
+info "Installed the following binaries:"
+for fyle in ${_newOrUpdatedBinFiles}; do
+  info "\t\t${fyle}"
+done
+
 if [ -n "${src}" -a "${src}" != "${build}" -a -e "${src}/Procfile" ]; then
     mv -t "${build}" "${src}/Procfile"
+fi
+
+if [ "${TOOL}" = "gomodules" ]; then
+    setupProcfile
 fi
 
 if [ ! -e $build/Procfile -a -n "${name}" ]; then
@@ -701,10 +729,3 @@ if [ "${TOOL}" != "gb" ]; then
     echo "NAME=${name}" >> "${t}"
 fi
 
-_newOrUpdatedBinFiles=$(binDiff)
-info ""
-info "Installed the following binaries:"
-for fyle in ${_newOrUpdatedBinFiles}; do
-  info "\t\t${fyle}"
-done
-info ""

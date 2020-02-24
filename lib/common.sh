@@ -3,11 +3,6 @@
 # -----------------------------------------
 # load environment variables
 # allow apps to specify cgo flags. The literal text '${build_dir}' is substituted for the build directory
-
-if [ -z "${buildpack}" ]; then
-    buildpack=$(cd "$(dirname $0)/.." && pwd)
-fi
-
 DataJSON="${buildpack}/data.json"
 FilesJSON="${buildpack}/files.json"
 depTOML="${build}/Gopkg.toml"
@@ -64,7 +59,7 @@ binDiff() {
     local let found=0
 
     for b in "${_binBefore[@]}"; do
-        if [ "${a}" == "${b}" ]; then
+        if [ "${a}" = "${b}" ]; then
         let found+=1
         fi
     done
@@ -112,7 +107,7 @@ determinLocalFileName() {
 
 knownFile() {
     local fileName="${1}"
-    if [ "${fileName}" == "jq-linux64" ]; then #jq is special cased here because we can't jq until we have jq
+    if [ "${fileName}" = "jq-linux64" ]; then #jq is special cased here because we can't jq until we have jq
         true
     else
         <${FilesJSON} jq -e 'to_entries | map(select(.key == "'${fileName}'")) | any' &> /dev/null
@@ -222,6 +217,7 @@ loadEnvDir() {
     envFlags+=("GO_INSTALL_PACKAGE_SPEC")
     envFlags+=("GO_INSTALL_TOOLS_IN_IMAGE")
     envFlags+=("GO_SETUP_GOPATH_IN_IMAGE")
+    envFlags+=("GO_SETUP_GOPATH_FOR_MODULE_CACHE")
     envFlags+=("GO_TEST_SKIP_BENCHMARK")
     envFlags+=("GLIDE_SKIP_INSTALL")
     local env_dir="${1}"
@@ -294,7 +290,7 @@ setGitCredHelper() {
                   ;;
                   *)
                     username="${t}"
-                    password="x-oauth-basic"
+                    password="${t}"
                   ;;
                 esac
                 echo username=${username}
@@ -319,6 +315,12 @@ setGoVersionFromEnvironment() {
     ver=${GOVERSION:-$DefaultGoVersion}
 }
 
+supportsGoModules() {
+    local version="${1}"
+    # Ex:      "go1.10.4" | ["go1","10", "4"] | ["1","10","4"]     | [1,10,4]      |  [1]           [10]      == exit 1 (fail)
+    echo "\"${version}\"" | jq -e 'split(".") | map(gsub("go";"")) | map(tonumber) | .[0] >= 1 and .[1] < 11' &> /dev/null
+}
+
 determineTool() {
     if [ -f "${makefile}" -a -n "$(grep '^heroku' ${makefile})" -a -n "$(find "$build" -mindepth 3 -type f -name '*.go' | sed 1q)" ]; then
         TOOL="make"
@@ -329,7 +331,7 @@ determineTool() {
         info "Detected go modules via go.mod"
         step ""
         ver=${GOVERSION:-$(awk '{ if ($1 == "//" && $2 == "+heroku" && $3 == "goVersion" ) { print $4; exit } }' ${goMOD})}
-        name=$(awk '{ if ($1 == "module" ) { print $2; exit } }' < ${goMOD})
+        name=$(awk '{ if ($1 == "module" ) { gsub(/"/, "", $2); print $2; exit } }' < ${goMOD})
         info "Detected Module Name: ${name}"
         step ""
         warnGoVersionOverride
@@ -342,16 +344,17 @@ determineTool() {
             warn "For more details see: https://devcenter.heroku.com/articles/go-apps-with-modules#build-configuration"
             warn ""
         fi
-        if ! <"${DataJSON}" jq  -e '.Go.SupportsModuleExperiment | any(. == "'${ver}'")' &> /dev/null; then
+
+        if supportsGoModules "${ver}"; then
             err "You are using ${ver}, which does not support Go modules"
             err ""
-            err "These go versions support Go modules: $(<${DataJSON} jq -c -r -M '.Go.SupportsModuleExperiment | sort | join(", ")')"
+            err "Go modules are supported by go1.11 and above."
             err ""
-            err "Please add a comment in your go.mod file, or update an existing one, to specify a Go version that does like so:"
-            err "// +heroku goVersion go1.11.5"
+            err "Please add/update the comment in your go.mod file to specify a Go version >= go1.11 like so:"
+            err "// +heroku goVersion ${DefaultGoVersion}"
             err ""
             err "Then commit and push again."
-           exit 1
+            exit 1
         fi
     elif [ -f "${depTOML}" ]; then
         TOOL="dep"
