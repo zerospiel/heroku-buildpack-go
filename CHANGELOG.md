@@ -2,6 +2,30 @@
 
 ## Unreleased
 
+## v142 (2020-04-27)
+* Set GOPATH earlier when using modules, which fixes issues when using Heroku CI
+
+## v141 (2020-04-21)
+* Add Heroku-20 to the Travis test matrix
+* Add go1.13.10, use for go1.13
+* Add go1.14.2, use for go1.14
+
+## v140 (2020-04-16)
+* Only pass -mod=vendor to `go list` if a vendor directory is present (#394)
+
+## v139 (2020-03-23)
+* Update shunit2
+* sbin/sync-files.sh: verify checksums serially
+* Add go1.12.17, use for go1.12 and as the default
+* Add go1.13.9, use for go1.13
+* Add go1.14.1, use for go1.14
+
+## v138 (2020-03-13)
+* Add go1.13.8
+* Add go1.14
+* Expand go1.13 to go1.13.8
+* Expand go1.14 to go1.14
+
 ## v137 (2020-02-19)
 * Add go1.12.15 and go1.12.16
 * Add go1.13.6 and go1.13.7
